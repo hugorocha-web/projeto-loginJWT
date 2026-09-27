@@ -20,6 +20,10 @@ btn.addEventListener('click', async()=>{
             })
 
         })
+        console.log(enviaruser.status)
+        if(enviaruser.status===200){
+            window.location.href = '../login/login.html'
+        }
 
 
 

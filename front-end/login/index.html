@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RetroSynth 1984 - Estúdio Synthwave & Chiptune</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Press+Start+2P&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        synth: {
+                            pink: '#ff007f',
+                            purple: '#8a2be2',
+                            cyan: '#00f3ff',
+                            yellow: '#ffee00',
+                            dark: '#0d021a',
+                            panel: '#1a0b2e',
+                            border: '#3a1c68'
+                        }
+                    },
+                    fontFamily: {
+                        orbitron: ['Orbitron', 'sans-serif'],
+                        arcade: ['"Press Start 2P"', 'cursive'],
+                        rajdhani: ['Rajdhani', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #080112;
+            color: #e0d5ff;
+            font-family: 'Rajdhani', sans-serif;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 50% 20%, rgba(255, 0, 127, 0.15) 0%, transparent 60%),
+                linear-gradient(to bottom, #080112 0%, #150228 100%);
+            background-attachment: fixed;
+        }
+
+        /* Efeito de linhas CRT / Scanlines */
+        .crt-overlay::before {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+            background-size: 100% 4px;
+            z-index: 100;
+            pointer-events: none;
+            opacity: 0.6;
+        }
+
+        /* Brilhos Neon */
+        .glow-pink {
+            text-shadow: 0 0 8px rgba(255, 0, 127, 0.8), 0 0 20px rgba(255, 0, 127, 0.4);
+        }
+        .glow-cyan {
+            text-shadow: 0 0 8px rgba(0, 243, 255, 0.8), 0 0 20px rgba(0, 243, 255, 0.4);
+        }
+        .box-glow-pink {
+            box-shadow: 0 0 15px rgba(255, 0, 127, 0.4), inset 0 0 10px rgba(255, 0, 127, 0.2);
+        }
+        .box-glow-cyan {
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.4), inset 0 0 10px rgba(0, 243, 255, 0.2);
+        }
+
+        /* Inputs de Alcance (Sliders Customizados) */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: #110524;
+            height: 6px;
+            border-radius: 3px;
+            border: 1px solid #3a1c68;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 18px;
+            width: 12px;
+            border-radius: 2px;
+            background: #00f3ff;
+            cursor: pointer;
+            box-shadow: 0 0 8px #00f3ff;
+        }
+        input[type=range].pink-slider::-webkit-slider-thumb {
+            background: #ff007f;
+            box-shadow: 0 0 8px #ff007f;
+        }
+
+        /* Botões do Sequenciador */
+        .step-btn {
+            transition: all 0.15s ease;
+        }
+        .step-btn.active {
+            background-color: #ff007f;
+            box-shadow: 0 0 12px #ff007f;
+            border-color: #ff80bf;
+        }
+        .step-btn.current {
+            border-color: #00f3ff;
+            transform: scale(1.08);
+            z-index: 10;
+        }
+        .step-btn.active.current {
+            background-color: #00f3ff;
+            box-shadow: 0 0 15px #00f3ff;
+            border-color: #ffffff;
+        }
+
+        /* Teclas do Teclado Sintetizador */
+        .key-white {
+            background: linear-gradient(to bottom, #e2d9f3 0%, #a291c3 100%);
+            color: #1a0b2e;
+            box-shadow: 0 4px 0 #5b4680;
+        }
+        .key-white:active, .key-white.pressed {
+            background: #00f3ff;
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 #008891;
+            color: #000;
+        }
+        .key-black {
+            background: linear-gradient(to bottom, #2a114d 0%, #0d021a 100%);
+            color: #ff007f;
+            box-shadow: 0 3px 0 #000;
+        }
+        .key-black:active, .key-black.pressed {
+            background: #ff007f;
+            transform: translateY(2px);
+            box-shadow: 0 1px 0 #800040;
+            color: #fff;
+        }
+
+        /* Grid Background Pattern */
+        .bg-grid {
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, rgba(138, 43, 226, 0.15) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(138, 43, 226, 0.15) 1px, transparent 1px);
+        }
+    </style>
+</head>
+<body class="crt-overlay bg-grid min-h-screen pb-12">
+
+    <header class="border-b border-synth-purple/50 bg-synth-dark/90 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded bg-gradient-to-tr from-synth-pink to-synth-cyan flex items-center justify-center font-arcade text-xs text-black font-bold shadow-lg animate-pulse">
+                    84
+                </div>
+                <div>
+                    <h1 class="font-orbitron font-black text-2xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-synth-pink via-synth-purple to-synth-cyan glow-pink">
+                        RETROSYNTH 1984
+                    </h1>
+                    <p class="text-xs font-rajdhani text-synth-cyan tracking-widest uppercase">Estúdio WebAudio & Sequenciador Synthwave</p>
+                </div>
+            </div>
+
+            <!-- Controles do Transporte -->
+            <div class="flex items-center space-x-3 bg-synth-panel p-2 rounded-xl border border-synth-border">
+                <button id="btn-play" class="px-5 py-2 bg-gradient-to-r from-synth-pink to-synth-purple rounded-lg font-orbitron font-bold text-sm tracking-wider text-white hover:opacity-90 active:scale-95 transition box-glow-pink flex items-center gap-2">
+                    <svg id="play-icon" class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    <span id="play-text">PLAY</span>
+                </button>
+                <button id="btn-stop" class="px-4 py-2 bg-synth-dark hover:bg-red-900/50 rounded-lg font-orbitron font-semibold text-xs tracking-wider text-red-400 border border-red-500/30 transition">
+                    PARAR
+                </button>
+
+                <div class="h-6 w-px bg-synth-border mx-1"></div>
+
+                <!-- Controle de Tempo BPM -->
+                <div class="flex items-center space-x-2 px-2">
+                    <span class="text-xs font-orbitron text-synth-cyan">BPM:</span>
+                    <input type="number" id="bpm-input" min="60" max="200" value="118" class="w-16 bg-synth-dark border border-synth-border text-center font-arcade text-xs text-synth-yellow rounded py-1 focus:outline-none focus:border-synth-cyan">
+                </div>
+
+                <!-- Seletor de Presets -->
+                <div class="flex items-center space-x-2 pl-2 border-l border-synth-border">
+                    <span class="text-xs font-orbitron text-gray-400 hidden sm:inline">PRESET:</span>
+                    <select id="preset-select" class="bg-synth-dark border border-synth-border text-xs text-synth-cyan font-orbitron rounded px-2 py-1 focus:outline-none focus:border-synth-pink cursor-pointer">
+                        <option value="synthwave">Synthwave Drive</option>
+                        <option value="cyberpunk">Cyberpunk 2088</option>
+                        <option value="chiptune">Chiptune Retro 8bit</option>
+                        <option value="empty">Vazio / Limpo</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Coluna Esquerda/Topo: Visualizador Canvas e Sintetizador Master (5 cols) -->
+        <div class="lg:col-span-5 flex flex-col gap-6">
+            
+            <!-- Visualizador Neon Canvas 2D -->
+            <div class="bg-synth-panel/80 rounded-2xl border border-synth-border p-4 relative overflow-hidden backdrop-blur box-glow-cyan">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-xs font-orbitron font-semibold text-synth-cyan tracking-wider flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-synth-cyan animate-ping"></span>
+                        VISUALIZADOR OSCILOSCÓPIO / GRID
+                    </span>
+                    <div class="flex gap-1">
+                        <button id="vis-mode-1" class="text-[10px] font-orbitron px-2 py-0.5 rounded bg-synth-cyan text-black font-bold">GRID</button>
+                        <button id="vis-mode-2" class="text-[10px] font-orbitron px-2 py-0.5 rounded bg-synth-dark text-synth-cyan border border-synth-border">WAVE</button>
+                    </div>
+                </div>
+                
+                <canvas id="visualizer" class="w-full h-48 rounded-lg bg-black/80 border border-synth-purple/40"></canvas>
+            </div>
+
+            <!-- Controles do Sintetizador Master / Efeitos -->
+            <div class="bg-synth-panel/80 rounded-2xl border border-synth-border p-5 backdrop-blur flex-1 flex flex-col justify-between">
+                <h2 class="text-sm font-orbitron font-bold text-synth-pink tracking-wider mb-4 border-b border-synth-border pb-2 flex items-center gap-2">
+                    <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M3 17v2h6v-2H3M3 5v2h10V5H3m10 16v-2h8v-2h-8v-2h-2v6h2M7 9v2H3v2h4v2h2V9H7m14 4v-2H11v2h10m-6-6h2V3h-2v2h-4v2h4v2z"/></svg>
+                    EFEITOS & CONTROLES DO SINTETIZADOR
+                </h2>
+
+                <div class="grid grid-cols-2 gap-4 text-xs font-orbitron">
+                    
+                    <!-- Forma de Onda -->
+                    <div class="col-span-2 bg-synth-dark/60 p-3 rounded-xl border border-synth-border/60">
+                        <label class="block text-gray-400 mb-2">FORMA DE ONDA DO LEAD:</label>
+                        <div class="grid grid-cols-4 gap-2" id="waveform-selector">
+                            <button data-wave="sawtooth" class="wave-btn active px-2 py-1.5 rounded bg-synth-pink text-white font-bold text-[10px] border border-synth-pink">SAW</button>
+                            <button data-wave="square" class="wave-btn px-2 py-1.5 rounded bg-synth-dark text-gray-300 text-[10px] border border-synth-border hover:border-synth-cyan">SQUARE</button>
+                            <button data-wave="sine" class="wave-btn px-2 py-1.5 rounded bg-synth-dark text-gray-300 text-[10px] border border-synth-border hover:border-synth-cyan">SINE</button>
+                            <button data-wave="triangle" class="wave-btn px-2 py-1.5 rounded bg-synth-dark text-gray-300 text-[10px] border border-synth-border hover:border-synth-cyan">TRI</button>
+                        </div>
+                    </div>
+
+                    <!-- Cutoff Filtro -->
+                    <div class="bg-synth-dark/60 p-3 rounded-xl border border-synth-border/60">
+                        <div class="flex justify-between mb-1">
+                            <span class="text-synth-cyan">FILTER CUTOFF</span>
+                            <span id="cutoff-val" class="text-synth-yellow">2000Hz</span>
+                        </div>
+                        <input type="range" id="filter-cutoff" min="100" max="8000" value="2000" class="w-full">
+                    </div>
+
+                    <!-- Ressonância -->
+                    <div class="bg-synth-dark/60 p-3 rounded-xl border border-synth-border/60">
+                        <div class="flex justify-between mb-1">
+                            <span class="text-synth-cyan">RESSONÂNCIA</span>
+                            <span id="reso-val" class="text-synth-yellow">2.0</span>
+                        </div>
+                        <input type="range" id="filter-reso" min="0" max="15" step="0.5" value="2" class="w-full">
+                    </div>
+
+                    <!-- Delay / Reverb Echo -->
+                    <div class="bg-synth-dark/60 p-3 rounded-xl border border-synth-border/60">
+                        <div class="flex justify-between mb-1">
+                            <span class="text-synth-pink">DELAY (ECHO)</span>
+                            <span id="delay-val" class="text-synth-yellow">30%</span>
+                        </div>
+                        <input type="range" id="effect-delay" min="0" max="80" value="30" class="w-full pink-slider">
+                    </div>
+
+                    <!-- Distorção Chiptune/Drive -->
+                    <div class="bg-synth-dark/60 p-3 rounded-xl border border-synth-border/60">
+                        <div class="flex justify-between mb-1">
+                            <span class="text-synth-pink">DRIVE / DIST</span>
+                            <span id="dist-val" class="text-synth-yellow">10%</span>
+                        </div>
+                        <input type="range" id="effect-dist" min="0" max="100" value="10" class="w-full pink-slider">
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Coluna Direita: Sequenciador de Passos de 16 Steps & Teclado Piano (7 cols) -->
+        <div class="lg:col-span-7 flex flex-col gap-6">
+            
+            <!-- Sequenciador 16-Step -->
+            <div class="bg-synth-panel/80 rounded-2xl border border-synth-border p-5 backdrop-blur box-glow-pink">
+                <div class="flex flex-wrap justify-between items-center mb-4 gap-2 border-b border-synth-border pb-3">
+                    <h2 class="text-sm font-orbitron font-bold text-synth-cyan tracking-wider flex items-center gap-2">
+                        <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+                        SEQUENCIADOR DE PASSOS (16 STEPS)
+                    </h2>
+                    <button id="btn-clear" class="text-[10px] font-orbitron px-2 py-1 bg-red-950/60 text-red-300 border border-red-800/40 rounded hover:bg-red-900 transition">
+                        LIMPAR GRADE
+                    </button>
+                </div>
+
+                <!-- Indicador de Passos (Header dos numerais 1-16) -->
+                <div class="grid grid-cols-17 gap-1 mb-2 items-center">
+                    <div class="text-[10px] font-orbitron text-gray-500 font-bold text-center">TRK</div>
+                    <div class="col-span-16 grid grid-cols-16 gap-1 text-center font-arcade text-[9px] text-synth-cyan">
+                        <span>1</span><span>2</span><span>3</span><span>4</span>
+                        <span class="text-synth-pink">5</span><span>6</span><span>7</span><span>8</span>
+                        <span>9</span><span>10</span><span>11</span><span>12</span>
+                        <span class="text-synth-pink">13</span><span>14</span><span>15</span><span>16</span>
+                    </div>
+                </div>
+
+                <!-- Trilhas/Canais dos Instrumentos -->
+                <div class="space-y-2" id="sequencer-grid">
+                    <!-- Gerado dinamicamente via JS (Kick, Snare, Hihat, Bass, Lead synth) -->
+                </div>
+            </div>
+
+            <!-- Teclado Sintetizador em Tempo Real -->
+            <div class="bg-synth-panel/80 rounded-2xl border border-synth-border p-5 backdrop-blur">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-sm font-orbitron font-bold text-synth-yellow tracking-wider flex items-center gap-2">
+                        <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-8 11.5c0 .83-.67 1.5-1.5 1.5S8 15.33 8 14.5V5h3v9.5zm5 0c0 .83-.67 1.5-1.5 1.5s-1.5-.67-1.5-1.5V5h3v9.5z"/></svg>
+                        TECLADO SINTETIZADOR AO VIVO
+                    </h2>
+                    <span class="text-[11px] font-rajdhani text-gray-400">Use o Teclado do PC: <span class="text-synth-cyan font-mono">A S D F G H J K</span> (Pretas: <span class="text-synth-pink font-mono">W E T Y U</span>)</span>
+                </div>
+
+                <!-- Teclas do Piano Canvas/HTML -->
+                <div class="relative flex justify-center py-2 px-1 bg-synth-dark/90 rounded-xl border border-synth-border select-none overflow-x-auto" id="piano-keyboard">
+                    <!-- Teclas geradas via JS para suporte completo de áudio/toque -->
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Rodapé -->
+    <footer class="text-center py-4 text-xs font-orbitron text-gray-500 border-t border-synth-border/40 mt-8">
+        RETROSYNTH 1984 &bull; WEBAUDIO API &bull; SINTETIZADOR VIRTUAL SENSORIAL
+    </footer>
+    <script src="main.js"></script>
+    <script>
+        // --- NÓS E CONTEXTO WEBAUDIO ---
+        let audioCtx = null;
+        let masterGain = null;
+        let delayNode = null;
+        let delayGain = null;
+        let filterNode = null;
+        let distortionNode = null;
+        let analyserNode = null;
+
+        // Estado do Sequenciador
+        let isPlaying = false;
+        let currentStep = 0;
+        let bpm = 118;
+        let timerId = null;
+        let currentWaveform = 'sawtooth';
+        let visualizerMode = 'grid'; // 'grid' ou 'wave'
+
+        // Canais do Sequenciador (Instrumentos)
+        const TRACKS = [
+            { id: 'kick', name: 'BUMBO (KICK)', color: 'border-red-500 text-red-400' },
+            { id: 'snare', name: 'CAIXA (SNARE)', color: 'border-yellow-500 text-yellow-400' },
+            { id: 'hihat', name: 'HI-HAT (PRATO)', color: 'border-cyan-500 text-cyan-400' },
+            { id: 'bass', name: 'BAIXO SYNTH', color: 'border-purple-500 text-purple-400' },
+            { id: 'lead', name: 'LEAD ARP', color: 'border-pink-500 text-pink-400' }
+        ];
+
+        // Matriz de Passos: 5 trilhas x 16 passos
+        let gridState = Array(5).fill(null).map(() => Array(16).fill(false));
+
+        // Mapeamento de Notas para o Teclado do PC
+        const KEY_MAP = {
+            'a': { note: 'C4', freq: 261.63, isBlack: false, label: 'A' },
+            'w': { note: 'C#4', freq: 277.18, isBlack: true, label: 'W' },
+            's': { note: 'D4', freq: 293.66, isBlack: false, label: 'S' },
+            'e': { note: 'D#4', freq: 311.13, isBlack: true, label: 'E' },
+            'd': { note: 'E4', freq: 329.63, isBlack: false, label: 'D' },
+            'f': { note: 'F4', freq: 349.23, isBlack: false, label: 'F' },
+            't': { note: 'F#4', freq: 369.99, isBlack: true, label: 'T' },
+            'g': { note: 'G4', freq: 392.00, isBlack: false, label: 'G' },
+            'y': { note: 'G#4', freq: 415.30, isBlack: true, label: 'Y' },
+            'h': { note: 'A4', freq: 440.00, isBlack: false, label: 'H' },
+            'u': { note: 'A#4', freq: 466.16, isBlack: true, label: 'U' },
+            'j': { note: 'B4', freq: 493.88, isBlack: false, label: 'J' },
+            'k': { note: 'C5', freq: 523.25, isBlack: false, label: 'K' }
+        };
+
+        function initAudio() {
+            if (audioCtx) return;
+
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            audioCtx = new AudioContext();
+
+            // Ganho Master
+            masterGain = audioCtx.createGain();
+            masterGain.gain.value = 0.6;
+
+            // Filtro Lowpass
+            filterNode = audioCtx.createBiquadFilter();
+            filterNode.type = 'lowpass';
+            filterNode.frequency.value = parseFloat(document.getElementById('filter-cutoff').value);
+            filterNode.Q.value = parseFloat(document.getElementById('filter-reso').value);
+
+            // Distorção
+            distortionNode = audioCtx.createWaveShaper();
+            updateDistortion(parseInt(document.getElementById('effect-dist').value));
+
+            // Delay / Reverb Echo
+            delayNode = audioCtx.createDelay();
+            delayNode.delayTime.value = 0.25; // tempo de eco
+            delayGain = audioCtx.createGain();
+            delayGain.gain.value = parseFloat(document.getElementById('effect-delay').value) / 100;
+
+            // Analisador para o Canvas
+            analyserNode = audioCtx.createAnalyser();
+            analyserNode.fftSize = 256;
+
+            // Encadeamento das conexões de áudio:
+            // Entrada -> Distorção -> Filtro -> MasterGain -> Analyser -> Saída (Speakers)
+            //                                    |-> DelayNode -> DelayGain -> MasterGain
+            filterNode.connect(distortionNode);
+            distortionNode.connect(masterGain);
+            
+            // Loop de Feedback do Delay
+            distortionNode.connect(delayNode);
+            delayNode.connect(delayGain);
+            delayGain.connect(delayNode);
+            delayGain.connect(masterGain);
+
+            masterGain.connect(analyserNode);
+            analyserNode.connect(audioCtx.destination);
+        }
+
+        // Função de cálculo de curva de distorção
+        function updateDistortion(amount) {
+            if (!distortionNode) return;
+            const k = typeof amount === 'number' ? amount : 0;
+            const n_samples = 44100;
+            const curve = new Float32Array(n_samples);
+            const deg = Math.PI / 180;
+            for (let i = 0; i < n_samples; ++i) {
+                let x = (i * 2) / n_samples - 1;
+                curve[i] = ((3 + k) * x * 20 * deg) / (Math.PI + k * Math.abs(x));
+            }
+            distortionNode.curve = curve;
+        }
+
+
+        // 1. Som de Bumbo (Kick Synth)
+        function playKick(time) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(130, time);
+            osc.frequency.exponentialRampToValueAtTime(0.01, time + 0.4);
+
+            gain.gain.setValueAtTime(1, time);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.4);
+
+            osc.connect(gain);
+            gain.connect(filterNode);
+
+            osc.start(time);
+            osc.stop(time + 0.4);
+        }
+
+        // 2. Som de Caixa (Snare Synth)
+        function playSnare(time) {
+            // Ruído Branco
+            const bufferSize = audioCtx.sampleRate * 0.2;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+
+            const noiseFilter = audioCtx.createBiquadFilter();
+            noiseFilter.type = 'highpass';
+            noiseFilter.frequency.value = 1000;
+
+            const noiseGain = audioCtx.createGain();
+            noiseGain.gain.setValueAtTime(0.8, time);
+            noiseGain.gain.exponentialRampToValueAtTime(0.01, time + 0.2);
+
+            noise.connect(noiseFilter);
+            noiseFilter.connect(noiseGain);
+            noiseGain.connect(filterNode);
+
+            // Componente de Tom de Corpo
+            const osc = audioCtx.createOscillator();
+            const oscGain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(180, time);
+            osc.frequency.exponentialRampToValueAtTime(0.01, time + 0.15);
+
+            oscGain.gain.setValueAtTime(0.7, time);
+            oscGain.gain.exponentialRampToValueAtTime(0.01, time + 0.15);
+
+            osc.connect(oscGain);
+            oscGain.connect(filterNode);
+
+            noise.start(time);
+            osc.start(time);
+            noise.stop(time + 0.2);
+            osc.stop(time + 0.2);
+        }
+
+        // 3. Som de Hi-Hat (Prato Fechado Synth)
+        function playHiHat(time) {
+            const bufferSize = audioCtx.sampleRate * 0.05;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'highpass';
+            filter.frequency.value = 7000;
+
+            const gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(0.3, time);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.05);
+
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(filterNode);
+
+            noise.start(time);
+            noise.stop(time + 0.05);
+        }
+
+        // 4. Som de Baixo Synth (Bassline Synthwave)
+        function playBass(time, step) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            // Notas da linha de baixo synthwave retro em A menor
+            const bassNotes = [110, 110, 130.81, 110, 146.83, 110, 130.81, 98.00]; // A2, C3, D3, G2
+            const freq = bassNotes[step % bassNotes.length];
+
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(freq, time);
+
+            gain.gain.setValueAtTime(0.6, time);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.2);
+
+            osc.connect(gain);
+            gain.connect(filterNode);
+
+            osc.start(time);
+            osc.stop(time + 0.2);
+        }
+
+        // 5. Som de Lead / Arpejo
+        function playLeadStep(time, step) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            // Escala Pentatônica Synthwave (A, C, D, E, G)
+            const arpNotes = [440, 523.25, 587.33, 659.25, 783.99, 880, 659.25, 523.25];
+            const freq = arpNotes[(step * 2) % arpNotes.length];
+
+            osc.type = currentWaveform;
+            osc.frequency.setValueAtTime(freq, time);
+
+            gain.gain.setValueAtTime(0.4, time);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.25);
+
+            osc.connect(gain);
+            gain.connect(filterNode);
+
+            osc.start(time);
+            osc.stop(time + 0.25);
+        }
+
+        // Tocar nota manual pelo teclado em tempo real
+        function playTone(freq) {
+            initAudio();
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = currentWaveform;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+            gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+
+            osc.connect(gain);
+            gain.connect(filterNode);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.5);
+        }
+
+        function stepTick() {
+            if (!isPlaying) return;
+
+            const now = audioCtx.currentTime;
+
+            // Tocar sons ativados no passo atual
+            if (gridState[0][currentStep]) playKick(now);
+            if (gridState[1][currentStep]) playSnare(now);
+            if (gridState[2][currentStep]) playHiHat(now);
+            if (gridState[3][currentStep]) playBass(now, currentStep);
+            if (gridState[4][currentStep]) playLeadStep(now, currentStep);
+
+            // Atualizar UI dos botões ativos
+            updateSequencerUI(currentStep);
+
+            // Avançar passo (1 a 16)
+            currentStep = (currentStep + 1) % 16;
+
+            // Agendar próximo passo com base no BPM
+            const stepTime = (60 / bpm) / 4 * 1000;
+            timerId = setTimeout(stepTick, stepTime);
+        }
+
+        function updateSequencerUI(activeStep) {
+            const buttons = document.querySelectorAll('.step-btn');
+            buttons.forEach((btn) => {
+                const step = parseInt(btn.dataset.step);
+                if (step === activeStep) {
+                    btn.classList.add('current');
+                } else {
+                    btn.classList.remove('current');
+                }
+            });
+        }
+
+        function togglePlay() {
+            initAudio();
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            isPlaying = !isPlaying;
+
+            const btnPlay = document.getElementById('btn-play');
+            const playText = document.getElementById('play-text');
+
+            if (isPlaying) {
+                playText.textContent = 'PAUSA';
+                btnPlay.classList.add('bg-synth-cyan');
+                stepTick();
+            } else {
+                playText.textContent = 'PLAY';
+                btnPlay.classList.remove('bg-synth-cyan');
+                clearTimeout(timerId);
+            }
+        }
+
+        function stopSequencer() {
+            isPlaying = false;
+            clearTimeout(timerId);
+            currentStep = 0;
+            document.getElementById('play-text').textContent = 'PLAY';
+            updateSequencerUI(-1);
+        }
+
+        function renderSequencer() {
+            const container = document.getElementById('sequencer-grid');
+            container.innerHTML = '';
+
+            TRACKS.forEach((track, trackIdx) => {
+                const row = document.createElement('div');
+                row.className = 'grid grid-cols-17 gap-1 items-center';
+
+                // Nome do Instrumento / Trilha
+                const label = document.createElement('div');
+                label.className = `text-[10px] font-orbitron font-bold truncate pr-1 ${track.color}`;
+                label.textContent = track.name;
+                row.appendChild(label);
+
+                // Grid dos 16 Passos
+                const stepsContainer = document.createElement('div');
+                stepsContainer.className = 'col-span-16 grid grid-cols-16 gap-1';
+
+                for (let stepIdx = 0; stepIdx < 16; stepIdx++) {
+                    const btn = document.createElement('button');
+                    btn.className = `step-btn h-8 rounded border bg-synth-dark/80 border-synth-border hover:border-synth-pink/60 ${gridState[trackIdx][stepIdx] ? 'active' : ''}`;
+                    btn.dataset.track = trackIdx;
+                    btn.dataset.step = stepIdx;
+
+                    btn.addEventListener('click', () => {
+                        gridState[trackIdx][stepIdx] = !gridState[trackIdx][stepIdx];
+                        btn.classList.toggle('active');
+                        initAudio();
+                        // Tocar preview ao clicar
+                        if (gridState[trackIdx][stepIdx] && audioCtx) {
+                            const now = audioCtx.currentTime;
+                            if (trackIdx === 0) playKick(now);
+                            if (trackIdx === 1) playSnare(now);
+                            if (trackIdx === 2) playHiHat(now);
+                            if (trackIdx === 3) playBass(now, stepIdx);
+                            if (trackIdx === 4) playLeadStep(now, stepIdx);
+                        }
+                    });
+
+                    stepsContainer.appendChild(btn);
+                }
+
+                row.appendChild(stepsContainer);
+                container.appendChild(row);
+            });
+        }
+
+        function renderPiano() {
+            const pianoContainer = document.getElementById('piano-keyboard');
+            pianoContainer.innerHTML = '';
+
+            Object.keys(KEY_MAP).forEach((key) => {
+                const item = KEY_MAP[key];
+                const keyEl = document.createElement('div');
+
+                if (item.isBlack) {
+                    keyEl.className = 'key-black w-7 h-24 -mx-3.5 z-10 rounded-b-md flex flex-col justify-end items-center pb-2 text-[10px] font-orbitron font-bold cursor-pointer transition';
+                } else {
+                    keyEl.className = 'key-white w-10 h-36 mx-0.5 rounded-b-lg flex flex-col justify-end items-center pb-3 text-xs font-orbitron font-bold cursor-pointer transition';
+                }
+
+                keyEl.dataset.key = key;
+                keyEl.innerHTML = `<span>${item.note}</span><span class="opacity-50 text-[9px]">${item.label}</span>`;
+
+                const triggerNote = (e) => {
+                    e.preventDefault();
+                    playTone(item.freq);
+                    keyEl.classList.add('pressed');
+                    setTimeout(() => keyEl.classList.remove('pressed'), 200);
+                };
+
+                keyEl.addEventListener('mousedown', triggerNote);
+                keyEl.addEventListener('touchstart', triggerNote);
+
+                pianoContainer.appendChild(keyEl);
+            });
+        }
+
+        function loadPreset(presetName) {
+            // Reset do Grid
+            gridState = Array(5).fill(null).map(() => Array(16).fill(false));
+
+            if (presetName === 'synthwave') {
+                // Kick nas batidas 1, 5, 9, 13
+                [0, 4, 8, 12].forEach(s => gridState[0][s] = true);
+                // Snare no 4 e 12
+                [4, 12].forEach(s => gridState[1][s] = true);
+                // Hi-hat corrido
+                [2, 6, 10, 14].forEach(s => gridState[2][s] = true);
+                // Bass continuo
+                [0, 2, 4, 6, 8, 10, 12, 14].forEach(s => gridState[3][s] = true);
+                // Lead Arp
+                [0, 3, 6, 9, 12, 15].forEach(s => gridState[4][s] = true);
+                bpm = 120;
+            } else if (presetName === 'cyberpunk') {
+                [0, 3, 8, 10].forEach(s => gridState[0][s] = true);
+                [4, 12].forEach(s => gridState[1][s] = true);
+                [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].forEach(s => gridState[2][s] = true);
+                [0, 2, 3, 6, 8, 10, 11, 14].forEach(s => gridState[3][s] = true);
+                [2, 6, 10, 14].forEach(s => gridState[4][s] = true);
+                bpm = 135;
+            } else if (presetName === 'chiptune') {
+                [0, 6, 8, 14].forEach(s => gridState[0][s] = true);
+                [4, 12].forEach(s => gridState[1][s] = true);
+                [2, 6, 10, 14].forEach(s => gridState[2][s] = true);
+                [0, 4, 8, 12].forEach(s => gridState[3][s] = true);
+                [0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14].forEach(s => gridState[4][s] = true);
+                bpm = 145;
+            }
+
+            document.getElementById('bpm-input').value = bpm;
+            renderSequencer();
+        }
+
+        function drawVisualizer() {
+            requestAnimationFrame(drawVisualizer);
+
+            const canvas = document.getElementById('visualizer');
+            const ctx = canvas.getContext('2d');
+
+            // Ajustar resolução dinâmica
+            if (canvas.width !== canvas.clientWidth || canvas.height !== canvas.clientHeight) {
+                canvas.width = canvas.clientWidth;
+                canvas.height = canvas.clientHeight;
+            }
+
+            const width = canvas.width;
+            const height = canvas.height;
+
+            ctx.fillStyle = '#0a0216';
+            ctx.fillRect(0, 0, width, height);
+
+            if (visualizerMode === 'grid') {
+                // Desenhar Sol Synthwave
+                const sunY = height * 0.45;
+                const sunGradient = ctx.createLinearGradient(0, sunY - 35, 0, sunY + 35);
+                sunGradient.addColorStop(0, '#ffee00');
+                sunGradient.addColorStop(0.5, '#ff007f');
+                sunGradient.addColorStop(1, '#8a2be2');
+
+                ctx.beginPath();
+                ctx.arc(width / 2, sunY, 35, 0, Math.PI * 2);
+                ctx.fillStyle = sunGradient;
+                ctx.fill();
+
+                // Linhas do sol
+                ctx.fillStyle = '#0a0216';
+                for (let i = 0; i < 5; i++) {
+                    ctx.fillRect(width / 2 - 40, sunY + (i * 6), 80, 2);
+                }
+
+                // Desenhar Grade Perspektiva Retro
+                ctx.strokeStyle = '#00f3ff';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+
+                // Linha de Horizonte
+                ctx.moveTo(0, sunY + 15);
+                ctx.lineTo(width, sunY + 15);
+
+                // Linhas Perspectivas
+                const vanishX = width / 2;
+                for (let x = -width; x <= width * 2; x += 30) {
+                    ctx.moveTo(vanishX, sunY + 15);
+                    ctx.lineTo(x, height);
+                }
+
+                ctx.stroke();
+
+                // Animar Ondas do Visualizador de Áudio integradas na Grade
+                if (analyserNode) {
+                    const bufferLength = analyserNode.frequencyBinCount;
+                    const dataArray = new Uint8Array(bufferLength);
+                    analyserNode.getByteFrequencyData(dataArray);
+
+                    ctx.strokeStyle = '#ff007f';
+                    ctx.lineWidth = 2;
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = '#ff007f';
+                    ctx.beginPath();
+
+                    const sliceWidth = width / bufferLength;
+                    let x = 0;
+
+                    for (let i = 0; i < bufferLength; i++) {
+                        const v = dataArray[i] / 255.0;
+                        const y = height - (v * (height * 0.4));
+
+                        if (i === 0) {
+                            ctx.moveTo(x, y);
+                        } else {
+                            ctx.lineTo(x, y);
+                        }
+                        x += sliceWidth;
+                    }
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+                }
+
+            } else {
+                // Modo Osciloscópio (Forma de Onda)
+                if (analyserNode) {
+                    const bufferLength = analyserNode.fftSize;
+                    const timeData = new Uint8Array(bufferLength);
+                    analyserNode.getByteTimeDomainData(timeData);
+
+                    ctx.lineWidth = 3;
+                    ctx.strokeStyle = '#00f3ff';
+                    ctx.shadowBlur = 12;
+                    ctx.shadowColor = '#00f3ff';
+                    ctx.beginPath();
+
+                    const sliceWidth = width / bufferLength;
+                    let x = 0;
+
+                    for (let i = 0; i < bufferLength; i++) {
+                        const v = timeData[i] / 128.0;
+                        const y = (v * height) / 2;
+
+                        if (i === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+
+                        x += sliceWidth;
+                    }
+                    ctx.lineTo(width, height / 2);
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+                }
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            renderSequencer();
+            renderPiano();
+            loadPreset('synthwave');
+            drawVisualizer();
+
+            // Eventos do Transporte
+            document.getElementById('btn-play').addEventListener('click', togglePlay);
+            document.getElementById('btn-stop').addEventListener('click', stopSequencer);
+            document.getElementById('bpm-input').addEventListener('change', (e) => {
+                bpm = Math.min(Math.max(parseInt(e.target.value) || 120, 60), 200);
+            });
+
+            document.getElementById('preset-select').addEventListener('change', (e) => {
+                loadPreset(e.target.value);
+            });
+
+            document.getElementById('btn-clear').addEventListener('click', () => {
+                gridState = Array(5).fill(null).map(() => Array(16).fill(false));
+                renderSequencer();
+            });
+
+            // Seletor de Formas de Onda
+            document.querySelectorAll('#waveform-selector button').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('#waveform-selector button').forEach(b => {
+                        b.classList.remove('active', 'bg-synth-pink', 'text-white');
+                        b.classList.add('bg-synth-dark', 'text-gray-300');
+                    });
+                    btn.classList.add('active', 'bg-synth-pink', 'text-white');
+                    currentWaveform = btn.dataset.wave;
+                });
+            });
+
+            // Controles de Efeitos Sliders
+            document.getElementById('filter-cutoff').addEventListener('input', (e) => {
+                const val = e.target.value;
+                document.getElementById('cutoff-val').textContent = val + 'Hz';
+                if (filterNode) filterNode.frequency.value = parseFloat(val);
+            });
+
+            document.getElementById('filter-reso').addEventListener('input', (e) => {
+                const val = e.target.value;
+                document.getElementById('reso-val').textContent = val;
+                if (filterNode) filterNode.Q.value = parseFloat(val);
+            });
+
+            document.getElementById('effect-delay').addEventListener('input', (e) => {
+                const val = e.target.value;
+                document.getElementById('delay-val').textContent = val + '%';
+                if (delayGain) delayGain.gain.value = parseFloat(val) / 100;
+            });
+
+            document.getElementById('effect-dist').addEventListener('input', (e) => {
+                const val = e.target.value;
+                document.getElementById('dist-val').textContent = val + '%';
+                updateDistortion(parseInt(val));
+            });
+
+            // Seletor de Modo do Visualizador
+            document.getElementById('vis-mode-1').addEventListener('click', () => {
+                visualizerMode = 'grid';
+                document.getElementById('vis-mode-1').className = 'text-[10px] font-orbitron px-2 py-0.5 rounded bg-synth-cyan text-black font-bold';
+                document.getElementById('vis-mode-2').className = 'text-[10px] font-orbitron px-2 py-0.5 rounded bg-synth-dark text-synth-cyan border border-synth-border';
+            });
+
+            document.getElementById('vis-mode-2').addEventListener('click', () => {
+                visualizerMode = 'wave';
+                document.getElementById('vis-mode-2').className = 'text-[10px] font-orbitron px-2 py-0.5 rounded bg-synth-cyan text-black font-bold';
+                document.getElementById('vis-mode-1').className = 'text-[10px] font-orbitron px-2 py-0.5 rounded bg-synth-dark text-synth-cyan border border-synth-border';
+            });
+
+            // Suporte para Teclado Físico do Computador
+            window.addEventListener('keydown', (e) => {
+                if (e.repeat) return;
+                const key = e.key.toLowerCase();
+                if (KEY_MAP[key]) {
+                    playTone(KEY_MAP[key].freq);
+                    const keyEl = document.querySelector(`[data-key="${key}"]`);
+                    if (keyEl) keyEl.classList.add('pressed');
+                }
+            });
+
+            window.addEventListener('keyup', (e) => {
+                const key = e.key.toLowerCase();
+                if (KEY_MAP[key]) {
+                    const keyEl = document.querySelector(`[data-key="${key}"]`);
+                    if (keyEl) keyEl.classList.remove('pressed');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -2,6 +2,8 @@ import express from 'express'
 import mongoose from 'mongoose'
 import dotenv from 'dotenv'
 import cors from 'cors'
+import jwt from 'jsonwebtoken'
+import { Verify } from 'node:crypto'
 
 dotenv.config()
 
@@ -26,11 +28,46 @@ const NewUserSchema = new mongoose.Schema({
 const User = mongoose.model('Usuario', NewUserSchema)
 
 
+
+function VerifyJwt(req, res, next){
+    let token = req.headers["authorization"]
+    if(!token) res.status(401).json({mensagem:'não existe token'})
+    token = req.headers["authorization"].replace("Bearer ", "");
+    
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_KEY);
+        if (!decoded) return res.status(403).json({ message: "Invalid token." });
+
+        res.locals.token = decoded
+        return next()
+    } 
+    catch (error) {
+        return res.status(403).json({mensagem: error})
+    }
+
+}
+
+app.get('/perfil', VerifyJwt, (req, res)=>{
+    let dados = res.locals.token
+    res.json({
+        message:'deu certo',
+        usuario: dados
+
+    })
+
+
+})
+
 app.post('/criarconta', async(req, res)=>{
     let newuser = req.body
 
     let Novousuario = await User.create(newuser)
-    res.send(Novousuario)
+    if(Novousuario){
+        res.status(200).json('ola')
+    }
+    else{
+        console.log('asd')
+    }
     console.log(Novousuario)
 
 })
@@ -41,9 +78,12 @@ app.post('/login', async(req, res)=>{
     const email = await User.findOne({ email: user.email })
     if(email){
         if(email.senha === user.senha){
-            res.status(200).json({
-                mensagem: 'entrou'
-            })
+            const token = jwt.sign(
+                { email: user.email },
+                process.env.JWT_KEY,
+                { expiresIn: process.env.JWT_TEMP }
+            )
+            res.status(200).json({token})
         }
         else{
             res.status(401).json({

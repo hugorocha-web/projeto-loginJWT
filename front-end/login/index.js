@@ -20,6 +20,10 @@ btn.addEventListener('click', async()=>{
         })
         console.log(enviaruser.status)
         if(enviaruser.status===200){
+            let token = await enviaruser.json()
+            localStorage.setItem('token', token.token)
+            window.location.href = 'index.html'
+            console.log(token.token)
             console.log('entrou')
         }
         else if(enviaruser.status===401){
