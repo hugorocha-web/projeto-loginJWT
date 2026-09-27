@@ -51,7 +51,6 @@ app.get('/perfil', VerifyJwt, (req, res)=>{
     let dados = res.locals.token
     res.json({
         message:'deu certo',
-        usuario: dados
 
     })
 
