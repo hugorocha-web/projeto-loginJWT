@@ -1,13 +1,12 @@
 async function carregarPerfil() {
     const token = localStorage.getItem('token')
+
     if (!token) {
         window.location.href = 'login.html'
         return
     }
 
-    console.log('TOKEN:', token)
-
-    const resposta = await fetch('http://localhost:3000/perfil', {
+    const resposta = await fetch('https://projeto-loginjwt.onrender.com/perfil', {
         headers: {
             Authorization: `Bearer ${token}`
         }
@@ -20,8 +19,6 @@ async function carregarPerfil() {
     }
 
     const dados = await resposta.json()
-
-    console.log(dados)
 }
 
 carregarPerfil()
