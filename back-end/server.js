@@ -52,9 +52,9 @@ function VerifyJwt(req, res, next){
 
 }
 
-app.get('/perfil', VerifyJwt, (req, res)=>{
+app.get('/perfil', VerifyJwt, async (req, res)=>{
     let dados = res.locals.token.email
-    let userr = User.findOne({email:dados})
+    let userr = await User.findOne({email:dados})
     res.json({
         message:'deu certo',
         user:userr
