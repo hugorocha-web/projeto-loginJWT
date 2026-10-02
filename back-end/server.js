@@ -3,7 +3,6 @@ import mongoose from 'mongoose'
 import dotenv from 'dotenv'
 import cors from 'cors'
 import jwt from 'jsonwebtoken'
-import { Verify } from 'node:crypto'
 
 dotenv.config()
 
@@ -31,7 +30,7 @@ const User = mongoose.model('Usuario', NewUserSchema)
 
 function VerifyJwt(req, res, next){
     let token = req.headers["authorization"]
-    if(!token) res.status(401).json({mensagem:'não existe token'})
+    if(!token) return res.status(401).json({mensagem:'não existe token'})
     token = req.headers["authorization"].replace("Bearer ", "");
     
     try {
