@@ -30,7 +30,11 @@ const User = mongoose.model('Usuario', NewUserSchema)
 
 function VerifyJwt(req, res, next){
     let token = req.headers["authorization"]
-    if(!token) return res.status(401).json({mensagem:'não existe token'})
+    if (!token) {
+        return res.status(401).json({
+            mensagem: 'não existe token'
+        })
+    }
     token = req.headers["authorization"].replace("Bearer ", "");
     
     try {

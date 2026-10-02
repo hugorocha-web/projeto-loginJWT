@@ -20,12 +20,13 @@ btn.addEventListener('click', async () => {
             let token = await enviaruser.json()
 
             localStorage.setItem('token', token.token)
+            
 
             window.location.href = 'index.html'
         }
 
         else if (enviaruser.status === 401) {
-
+            console.log('senha incorreta')
         }
 
     } catch (error) {
