@@ -47,10 +47,11 @@ function VerifyJwt(req, res, next){
 }
 
 app.get('/perfil', VerifyJwt, (req, res)=>{
-    let dados = res.locals.token
+    let dados = res.locals.token.email
+    let userr = User.findOne({email:dados})
     res.json({
         message:'deu certo',
-
+        user:userr
     })
 
 
