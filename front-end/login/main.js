@@ -19,6 +19,7 @@ async function carregarPerfil() {
     }
 
     const dados = await resposta.json()
+    
 }
 
 carregarPerfil()
