@@ -14,7 +14,7 @@ async function carregarPerfil() {
 
     if (!resposta.ok) {
         localStorage.removeItem('token')
-        window.location.href = 'login.html'
+        
         return
     }
 

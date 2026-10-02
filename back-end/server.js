@@ -45,7 +45,9 @@ function VerifyJwt(req, res, next){
         return next()
     } 
     catch (error) {
-        return res.status(403).json({mensagem: error})
+        return res.status(403).json({
+            mensagem: error.message
+        })
     }
 
 }

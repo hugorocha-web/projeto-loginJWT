@@ -20,7 +20,6 @@ btn.addEventListener('click', async () => {
             let token = await enviaruser.json()
 
             localStorage.setItem('token', token.token)
-            
 
             window.location.href = 'index.html'
         }
